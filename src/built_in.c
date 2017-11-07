@@ -4,7 +4,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <linux/limits.h>
+//#include <linux/limits.h>
+#include <limits.h>
 
 #include "built_in.h"
 

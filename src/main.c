@@ -10,6 +10,15 @@ int main()
 {
   char buf[8096];
 
+  char* paths = getenv("PATH");
+  char* path = strtok(paths, ":");
+
+  while(path != NULL) {
+    g_paths[g_path_count++] = path;
+    path = strtok(NULL, ":");
+  }
+  g_paths[g_path_count] = NULL;
+
   while (1) {
     fgets(buf, 8096, stdin);
 
