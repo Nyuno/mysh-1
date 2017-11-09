@@ -31,10 +31,6 @@ static int is_built_in_command(const char* command_name)
 
 int execute_command(char* command, char** argv, int argc) {
   char command_path[256] = "";
-  char *command_argv[argc];
-
-  memcpy(command_argv, argv, argc * sizeof(char*));
-  command_argv[argc] = NULL;
 
   int pid = fork();
 
@@ -45,13 +41,12 @@ int execute_command(char* command, char** argv, int argc) {
     return -1;
   } else if (pid == 0) {
     // Child DO
-    execv(command, command_argv);
+    execv(command, argv);
 
     for (int i = 0; i < g_path_count; ++i) {
       sprintf(command_path, "%s/%s", g_paths[i], command);
-      command_argv[0] = command_path;
 
-      execv(command_path, command_argv);
+      execv(command_path, argv);
     }
 
     fprintf(stderr, "%s: command not found\n", command);
@@ -91,14 +86,6 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
     } else if (strcmp(com->argv[0], "exit") == 0) {
       return 1;
     } else {
-      /*
-       * TODO
-       *  1. fork
-       *  1.2 parent return 0;
-       *  2. vlidate check each `PATH/command`
-       *  3.1 if validate PATH/command then execv
-       *  3.2 not validate then print error message
-       */
       return execute_command(com->argv[0], com->argv, com->argc);
     }
   }
