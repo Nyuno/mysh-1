@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "commands.h"
@@ -29,7 +31,7 @@ static int is_built_in_command(const char* command_name)
   return -1; // Not found
 }
 
-int execute_command(char* command, char** argv, int argc) {
+int execute_command(char* command, char** argv) {
   char command_path[256] = "";
 
   int pid = fork();
@@ -41,6 +43,47 @@ int execute_command(char* command, char** argv, int argc) {
     return -1;
   } else if (pid == 0) {
     // Child DO
+    execv(command, argv);
+
+    for (int i = 0; i < g_path_count; ++i) {
+      sprintf(command_path, "%s/%s", g_paths[i], command);
+
+      execv(command_path, argv);
+    }
+
+    fprintf(stderr, "%s: command not found\n", command);
+
+    return -1;
+  } else {
+    // Parent DO
+    int status;
+    wait(&status);
+  }
+
+  return 0;
+}
+
+int execute_command_with_socket(int input_stream, int output_stream, char* command, char** argv) {
+  char command_path[256] = "";
+  int pid = fork();
+
+  if (pid == -1) {
+    // Fail DO
+    fprintf(stderr, "%s: unknown error; fork failed\n", command);
+
+    return -1;
+  } else if (pid == 0) {
+    // Child DO
+    if (input_stream != STDIN_FILENO) {
+      dup2(input_stream, STDIN_FILENO);
+      close(input_stream);
+    }
+
+    if (output_stream != STDOUT_FILENO) {
+      dup2(output_stream, STDOUT_FILENO);
+      close(output_stream);
+    }
+
     execv(command, argv);
 
     for (int i = 0; i < g_path_count; ++i) {
@@ -86,7 +129,39 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
     } else if (strcmp(com->argv[0], "exit") == 0) {
       return 1;
     } else {
-      return execute_command(com->argv[0], com->argv, com->argc);
+      int pid = fork();
+
+      if (pid == -1) {
+        fprintf(stderr, "%s: Fork fail\n", com->argv[0]);
+        return -1;
+      } else if (pid == 0) {
+        int input_stream, sockfg[2];
+        struct single_command* com  = (*commands);
+        input_stream                = STDIN_FILENO;
+
+        for (int i = 0; i < n_commands - 1; ++i) {
+          socketpair(AF_UNIX, SOCK_STREAM, 0, sockfg);
+          execute_command_with_socket(input_stream, sockfg[1], (com + i)->argv[0], (com + i)->argv);
+          close(sockfg[1]);
+
+          input_stream = sockfg[0];
+        }
+
+        if (input_stream != STDIN_FILENO) {
+          dup2(input_stream, STDIN_FILENO);
+        }
+
+        execute_command((com + n_commands - 1)->argv[0], (com + n_commands - 1)->argv);
+
+        if (n_commands > 1) {
+          close(sockfg[0]);
+        }
+      } else {
+        int status;
+        wait(&status);
+      }
+
+      return 0;
     }
   }
 

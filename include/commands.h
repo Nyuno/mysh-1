@@ -10,7 +10,8 @@ struct single_command
   char** argv;
 };
 
-int execute_command(char* command, char** argv, int argc);
+int execute_command(char* command, char** argv);
+int execute_command_with_socket(int input_stream, int output_stream, char* command, char** argv);
 
 int evaluate_command(int n_commands, struct single_command (*commands)[512]);
 
