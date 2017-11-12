@@ -130,13 +130,13 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
       return 1;
     } else {
       int pid = fork();
+      int input_stream, sockfg[2];
+      struct single_command* com  = (*commands);
 
       if (pid == -1) {
         fprintf(stderr, "%s: Fork fail\n", com->argv[0]);
         return -1;
       } else if (pid == 0) {
-        int input_stream, sockfg[2];
-        struct single_command* com  = (*commands);
         input_stream                = STDIN_FILENO;
 
         for (int i = 0; i < n_commands - 1; ++i) {
@@ -149,16 +149,18 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 
         if (input_stream != STDIN_FILENO) {
           dup2(input_stream, STDIN_FILENO);
+          close(input_stream);
         }
 
         execute_command((com + n_commands - 1)->argv[0], (com + n_commands - 1)->argv);
 
-        if (n_commands > 1) {
-          close(sockfg[0]);
-        }
       } else {
         int status;
         wait(&status);
+
+        shutdown(sockfg[0], SHUT_RDWR);
+        printf("sockfg[0]: %d\n", sockfg[0]);
+        printf("sockfg[1]: %d\n", sockfg[1]);
       }
 
       return 0;
