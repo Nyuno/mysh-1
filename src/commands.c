@@ -93,8 +93,9 @@ int execute_command_with_socket(int input_stream, int output_stream, char* comma
     }
 
     fprintf(stderr, "%s: command not found\n", command);
+    exit(1);
 
-    return -1;
+    return 1;
   } else {
     // Parent DO
     int status;
