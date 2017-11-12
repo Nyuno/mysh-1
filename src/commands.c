@@ -111,6 +111,8 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 {
   if (n_commands > 0) {
     struct single_command* com = (*commands);
+    int saved_stdin = dup(0);
+    int saved_stdout = dup(1);
 
     assert(com->argc != 0);
 
@@ -137,7 +139,10 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
         fprintf(stderr, "%s: Fork fail\n", com->argv[0]);
         return -1;
       } else if (pid == 0) {
-        input_stream                = STDIN_FILENO;
+        close(saved_stdin);
+        close(saved_stdout);
+
+        input_stream = STDIN_FILENO;
 
         for (int i = 0; i < n_commands - 1; ++i) {
           socketpair(AF_UNIX, SOCK_STREAM, 0, sockfg);
@@ -154,13 +159,15 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 
         execute_command((com + n_commands - 1)->argv[0], (com + n_commands - 1)->argv);
 
+        return 1;
       } else {
         int status;
         wait(&status);
 
-        shutdown(sockfg[0], SHUT_RDWR);
-        printf("sockfg[0]: %d\n", sockfg[0]);
-        printf("sockfg[1]: %d\n", sockfg[1]);
+        dup2(saved_stdin, 0);
+        close(saved_stdin);
+        dup2(saved_stdout, 1);
+        close(saved_stdout);
       }
 
       return 0;
