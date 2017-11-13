@@ -11,6 +11,11 @@ struct built_in_command
   built_in_command_validate command_validate;
 };
 
+extern int background_pid;
+extern int background_argc;
+extern char* background_argv[256];
+
+
 /**
   do_cd(argc, argv)
 

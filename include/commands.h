@@ -3,11 +3,6 @@
 
 extern int g_path_count;
 extern char* g_paths[256];
-extern int background_parent_pid;
-extern int background_pid;
-extern int background_argc;
-extern char* background_argv[256];
-
 
 struct single_command
 {

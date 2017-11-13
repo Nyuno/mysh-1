@@ -9,6 +9,10 @@
 
 #include "built_in.h"
 
+int background_pid        = 0;
+int background_argc       = 0;
+char* background_argv[256];
+
 int do_cd(int argc, char** argv) {
   if (!validate_cd_argv(argc, argv))
     return -1;
@@ -38,6 +42,18 @@ int do_fg(int argc, char** argv) {
     return -1;
 
   // TODO: Fill this.
+  if (background_pid) {
+    printf("%d running ", background_pid);
+    for (int i = 0; i < background_argc; ++i) {
+      printf("%s ", background_argv[i]);
+    }
+    printf("\n");
+
+    int status;
+    wait(background_pid, &status, 0);
+  } else {
+    fprintf(stderr, "fg: unknown error;\n");
+  }
 
   return 0;
 }
