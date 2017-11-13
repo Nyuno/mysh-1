@@ -10,10 +10,6 @@
 #include "built_in.h"
 
 int g_path_count          = 0;
-int background_parent_pid = 0;
-int background_pid        = 0;
-int background_argc       = 0;
-char* background_argv[256];
 char* g_paths[256];
 
 static struct built_in_command built_in_commands[] = {
@@ -133,16 +129,17 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
       memcpy(background_argv, last_com->argv, sizeof(background_argv));
       background_argc = last_com->argc;
 
-      background_parent_pid = fork();
+      background_pid = fork();
 
-      if (background_parent_pid == -1) {
+      if (background_pid == -1) {
         return 0;
-      } else if (background_parent_pid == 0) {
-        background_pid = fork();
+      } else if (background_pid == 0) {
+        background_pid = getpid();
+        int pid = fork();
 
-        if (background_pid == -1) {
+        if (pid == -1) {
           exit(1);
-        } else if (background_pid == 0) {
+        } else if (pid == 0) {
           //CHILD
           evaluate_command(n_commands, commands);
 
@@ -167,25 +164,9 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
           return 1;
         }
       } else {
+        printf("background_pid: %d\n", background_pid);
         return 0;
       }
-
-      /*
-      printf("pid running\t");
-      for (int i = 0; i < background_argc; ++i) {
-        printf("%s ", background_argv[i]);
-      }
-      printf("\n");
-      */
-
-      /*
-       * TODO
-       *  1. 프로세스 생성
-       *  2. 자식 프로세스에서 Background용 프로세스 생성
-       *  3. 자식 프로세스에서 Background용 프로세스 pid 출력
-       *  4. 자식 프로세스에서 wait(Background용 프로세스)
-       *  5. Background용 프로세스 끝나면 pid 출력과 함께 자식 프로세스 종료
-       */
     }
 
     int built_in_pos = is_built_in_command(com->argv[0]);
