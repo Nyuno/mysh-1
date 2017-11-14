@@ -50,7 +50,7 @@ int do_fg(int argc, char** argv) {
     printf("\n");
 
     int status;
-    wait(background_pid, &status, 0);
+    waitpid(background_pid, &status, 0);
   } else {
     fprintf(stderr, "fg: unknown error;\n");
   }
