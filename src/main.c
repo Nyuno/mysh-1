@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
+#include "signal_handlers.h"
 #include "commands.h"
 #include "built_in.h"
 #include "utils.h"
@@ -19,7 +21,15 @@ int main()
   }
   g_paths[g_path_count] = NULL;
 
+
   while (1) {
+    if (signal(SIGINT, catch_sigint) == SIG_ERR) {
+      printf("\nCAN NOT CATCH SIGINT");
+    }
+
+    if (signal(SIGTSTP, catch_sigtstp) == SIG_ERR) {
+      printf("\nCAN NOT CATCH SIGINT");
+    }
     fgets(buf, 8096, stdin);
 
     struct single_command commands[512];
